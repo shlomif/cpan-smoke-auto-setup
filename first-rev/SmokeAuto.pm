@@ -167,5 +167,11 @@ sub install_all
     install_smokers();
 }
 
+sub smoke
+{
+    local $ENV{PERL_MM_USE_DEFAULT} = 1;
+    system($perl_exe, "-MCPAN::YACSmoke", "-e", "test");
+}
+
 1;
 
