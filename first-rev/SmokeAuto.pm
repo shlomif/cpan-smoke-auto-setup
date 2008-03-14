@@ -12,9 +12,17 @@ use File::Copy;
 my $perl_version = SmokeConf::get_perl_version();
 my $inst_path = SmokeConf::get_inst_path();
 my $perl_dir = "perl-$perl_version";
-my $perl_arc = "$perl_dir.tar.bz2";
+# my $perl_arc = "$perl_dir.tar.bz2";
+my $perl_arc = "$perl_dir.tar.gz";
 my $perl_exe = "$inst_path/bin/perl";
 
+sub run_in_env
+{
+    my $callback = shift;
+    local $ENV{PERL_MM_USE_DEFAULT} = 1;
+    local $ENV{PATH} = "$inst_path/bin:".$ENV{PATH};
+    $callback->();
+}
 
 sub install_perl
 {
@@ -24,7 +32,7 @@ sub install_perl
 
     print "Unpacking perl\n";
 
-    system ("tar", "-xjvf", $perl_arc);
+    system ("tar", "-xvf", $perl_arc);
 
     compile();
 
@@ -64,7 +72,10 @@ sub setup_CPAN_pm
 
 sub install_cpanplus
 {
-    system($perl_exe, "-MCPAN", "-e", "install CPANPLUS");
+    foreach my $module (qw(IPC::Cmd CPANPLUS))
+    {
+        system($perl_exe, "-MCPAN", "-e", "install('$module')");
+    }
 }
 
 sub install_module
@@ -85,6 +96,7 @@ sub install_smokers
         LWP::UserAgent
         YAML
         Mail::Send
+        ExtUtils::CBuilder
         Module::Build
         CPANPLUS::Dist::Build
         Test::Reporter
@@ -162,15 +174,19 @@ sub get_CPAN_pm_contents
 
 sub install_all
 {
+    run_in_env(sub {
     install_perl();
     install_cpanplus();
     install_smokers();
+    }
+    );
 }
 
 sub smoke
 {
-    local $ENV{PERL_MM_USE_DEFAULT} = 1;
-    system($perl_exe, "-MCPAN::YACSmoke", "-e", "test");
+    run_in_env(sub {
+        system($perl_exe, "-MCPAN::YACSmoke", "-e", "test");
+    });
 }
 
 1;
