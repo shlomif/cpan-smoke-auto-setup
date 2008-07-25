@@ -9,6 +9,17 @@ use File::Spec;
 use File::Path;
 use File::Copy;
 
+use base 'Exporter';
+
+our @EXPORT = (qw(
+    install_all
+    install_cpanplus
+    install_perl
+    install_smokers
+    smoke
+    )
+);
+
 my $perl_version = SmokeConf::get_perl_version();
 my $inst_path = SmokeConf::get_inst_path();
 my $perl_dir = "perl-$perl_version";
