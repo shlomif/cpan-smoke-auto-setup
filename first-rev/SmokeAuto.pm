@@ -16,6 +16,16 @@ my $perl_dir = "perl-$perl_version";
 my $perl_arc = "$perl_dir.tar.gz";
 my $perl_exe = "$inst_path/bin/perl";
 
+sub exec_program
+{
+    my @args = @_;
+
+    if (system(@args))
+    {
+        die "Cannot exec " . $args[0];
+    }
+}
+
 sub run_in_env
 {
     my $callback = shift;
@@ -26,17 +36,19 @@ sub run_in_env
 
 sub install_perl
 {
+    run_in_env(sub {
     print "Downloading perl\n";
 
-    system ("wget", "-c", SmokeConf::get_primary_cpan_mirror() . "src/$perl_arc");
+    exec_program ("wget", "-c", SmokeConf::get_primary_cpan_mirror() . "src/$perl_arc");
 
     print "Unpacking perl\n";
 
-    system ("tar", "-xvf", $perl_arc);
+    exec_program ("tar", "-xvf", $perl_arc);
 
     compile();
 
     setup_CPAN_pm();
+    });
 }
 
 sub compile
@@ -50,15 +62,15 @@ sub compile
 
     print "Configuring perl\n";
 
-    system("sh", "Configure", "-Dprefix=$inst_path", "-de");
+    exec_program("sh", "Configure", "-Dprefix=$inst_path", "-de");
 
     print "Compiling perl\n";
 
-    system("make");
+    exec_program("make");
 
     print "Installing perl\n";
 
-    system("make", "install");
+    exec_program("make", "install");
 
     chdir($dir);
 }
@@ -72,10 +84,12 @@ sub setup_CPAN_pm
 
 sub install_cpanplus
 {
+    run_in_env(sub {
     foreach my $module (qw(IPC::Cmd CPANPLUS))
     {
-        system($perl_exe, "-MCPAN", "-e", "install('$module')");
+        exec_program($perl_exe, "-MCPAN", "-e", "install('$module')");
     }
+    });
 }
 
 sub install_module
@@ -84,7 +98,7 @@ sub install_module
     my @args = ($perl_exe, "-MCPANPLUS", "-e", 'install("' . $module . '")');
     # print join(",",@args), "\n";
     local $ENV{PERL_MM_USE_DEFAULT} = 1;
-    if (! (system(@args) == 0))
+    if (! (exec_program(@args) == 0))
     {
         die "Failed at installing module '$module'!";
     }
@@ -92,6 +106,7 @@ sub install_module
 
 sub install_smokers
 {
+    run_in_env(sub {
     foreach my $m (qw(
         LWP::UserAgent
         YAML
@@ -105,12 +120,13 @@ sub install_smokers
     {
         install_module($m);
     }
+    });
 }
 
 sub get_CPAN_pm_template
 {
     return <<'EOF'
-# This is CPAN.pm's systemwide configuration file. This file provides
+# This is CPAN.pm's exec_programwide configuration file. This file provides
 # defaults for users, and the values can be changed in a per-user
 # configuration file. The user-config file is being looked for as
 # ~/.cpan/CPAN/MyConfig.pm.
@@ -185,7 +201,7 @@ sub install_all
 sub smoke
 {
     run_in_env(sub {
-        system($perl_exe, "-MCPAN::YACSmoke", "-e", "test");
+        exec_program($perl_exe, "-MCPAN::YACSmoke", "-e", "test");
     });
 }
 
