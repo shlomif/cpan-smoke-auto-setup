@@ -12,10 +12,13 @@ use File::Copy;
 use base 'Exporter';
 
 our @EXPORT = (qw(
+    configure_cpanplus
+    install_after_perl
     install_all
     install_cpanplus
+    install_first_smokers
+    install_more_smokers
     install_perl
-    install_smokers
     smoke
     )
 );
@@ -115,7 +118,20 @@ sub install_module
     }
 }
 
-sub install_smokers
+sub install_first_smokers
+{
+    run_in_env(sub {
+    foreach my $m (qw(
+        YAML::Tiny
+        Test::Reporter
+        ))
+    {
+        install_module($m);
+    }
+    });
+}
+
+sub install_more_smokers
 {
     run_in_env(sub {
     foreach my $m (qw(
@@ -125,7 +141,6 @@ sub install_smokers
         ExtUtils::CBuilder
         Module::Build
         CPANPLUS::Dist::Build
-        Test::Reporter
         CPAN::YACSmoke
         ))
     {
@@ -199,12 +214,37 @@ sub get_CPAN_pm_contents
     return $text;
 }
 
+sub configure_cpanplus
+{
+    run_in_env(sub {
+        exec_program($perl_exe, "-MCPANPLUS::Configure", "-e", 
+            q/my ($email) = @ARGV; 
+              my $conf = CPANPLUS::Configure->new(); 
+              $conf->set_conf(email => $email);
+              $conf->set_conf(cpantest => 1);
+              $conf->set_conf(verbose => 1);
+              $conf->save();
+              /, 
+              SmokeConf::get_email()
+          );
+    });
+}
+
+sub install_after_perl
+{
+    run_in_env(sub {
+        install_cpanplus();
+        install_first_smokers();
+        configure_cpanplus();
+        install_more_smokers();
+    });
+}
+
 sub install_all
 {
     run_in_env(sub {
     install_perl();
-    install_cpanplus();
-    install_smokers();
+    install_after_perl();
     }
     );
 }

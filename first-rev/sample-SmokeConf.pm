@@ -27,11 +27,15 @@ sub get_secondary_cpan_mirror
     # return "http://cpan.initworld.com/";
 }
 
-
-
 sub get_cpan_home
 {
     return $ENV{'HOME'} . "/.cpan";
 }
+
+sub get_email
+{
+    return 'shlomif@cpan.org';
+}
+
 1;
 
