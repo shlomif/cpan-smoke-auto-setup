@@ -214,18 +214,52 @@ sub get_CPAN_pm_contents
     return $text;
 }
 
+sub _get_mirror
+{
+    my ($id, $url) = @_;
+    if (my ($scheme, $host, $path) = $url =~ m{\A(http|ftp)://([^/]+)(/.*)\z}ms)
+    {
+        return
+        {
+            "${id}_scheme" => $scheme,
+            "${id}_host" => $host,
+            "${id}_path" => $path,
+        };
+    }
+    else
+    {
+        die "Incorrect URL id = $id ; url = $url";
+    }
+}
+
 sub configure_cpanplus
 {
     run_in_env(sub {
+        my %mirrors = (
+            %{_get_mirror('m0', SmokeConf::get_primary_cpan_mirror())},
+            %{_get_mirror('m1', SmokeConf::get_secondary_cpan_mirror())},
+        );
         exec_program($perl_exe, "-MCPANPLUS::Configure", "-e", 
-            q/my ($email) = @ARGV; 
+            q/my %p = @ARGV; 
               my $conf = CPANPLUS::Configure->new(); 
-              $conf->set_conf(email => $email);
+              $conf->set_conf(email => $p{'email'});
               $conf->set_conf(cpantest => 1);
               $conf->set_conf(verbose => 1);
+              $conf->set_conf("hosts", 
+                [map 
+                    { 
+                        +{
+                            path => $p{$_ . "_path"},
+                            scheme => $p{$_ . "_scheme"},
+                            host => $p{$_ . "_host"},
+                         }
+                    }
+                  (map { "m".$_ } 0 .. 1)
+                  ]
+                  );
               $conf->save();
-              /, 
-              SmokeConf::get_email()
+              /,
+              ('email' => SmokeConf::get_email(), %mirrors),
           );
     });
 }
