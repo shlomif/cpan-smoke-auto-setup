@@ -29,6 +29,7 @@ my $perl_dir = "perl-$perl_version";
 # my $perl_arc = "$perl_dir.tar.bz2";
 my $perl_arc = "$perl_dir.tar.gz";
 my $perl_exe = "$inst_path/bin/perl";
+my $yacsmoke = "CPANPLUS::YACSmoke";
 
 sub exec_program
 {
@@ -141,8 +142,9 @@ sub install_more_smokers
         ExtUtils::CBuilder
         Module::Build
         CPANPLUS::Dist::Build
-        CPAN::YACSmoke
-        ))
+        ),
+        $yacsmoke,
+    )
     {
         install_module($m);
     }
@@ -286,7 +288,9 @@ sub install_all
 sub smoke
 {
     run_in_env(sub {
-        exec_program($perl_exe, "-MCPAN::YACSmoke", "-e", "test");
+        exec_program(
+            $perl_exe, "-M".$yacsmoke, "-e", $yacsmoke."::test()"
+        );
     });
 }
 
