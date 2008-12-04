@@ -37,8 +37,10 @@ sub exec_program
 
     if (system(@args))
     {
-        die "Cannot exec " . $args[0];
+        die "Cannot exec " . join(" ", map { qq{"$_"} } @args);
     }
+
+    return;
 }
 
 sub run_in_env
@@ -99,24 +101,29 @@ sub setup_CPAN_pm
 
 sub install_cpanplus
 {
-    run_in_env(sub {
-    foreach my $module (qw(IPC::Cmd CPANPLUS))
-    {
-        exec_program($perl_exe, "-MCPAN", "-e", "install('$module')");
-    }
-    });
+    run_in_env(
+        sub {
+            # CPANPLUS does not handle downloads without LWP properly
+            # so we need to install LWP::UserAgent at this stage.
+            foreach my $module (qw(LWP::UserAgent IPC::Cmd CPANPLUS))
+            {
+                exec_program($perl_exe, "-MCPAN", "-e", "install('$module')");
+            }
+        }
+    );
 }
 
 sub install_module
 {
     my $module = shift;
-    my @args = ($perl_exe, "-MCPANPLUS", "-e", 'install("' . $module . '")');
+    my @args =
+    (
+        $perl_exe, "-MCPANPLUS", "-e",
+        'exit(!install("' . $module . '"))'
+    );
     # print join(",",@args), "\n";
     local $ENV{PERL_MM_USE_DEFAULT} = 1;
-    if (! (exec_program(@args) == 0))
-    {
-        die "Failed at installing module '$module'!";
-    }
+    exec_program(@args);
 }
 
 sub install_first_smokers
