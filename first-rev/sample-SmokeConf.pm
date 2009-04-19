@@ -17,7 +17,8 @@ sub get_inst_path
 
 sub get_primary_cpan_mirror
 {
-    return "http://mirror.mirimar.net/cpan/";
+    # return "http://mirror.mirimar.net/cpan/";
+    return "http://cpan.cpantesters.org/";
 }
 
 sub get_secondary_cpan_mirror
