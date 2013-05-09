@@ -248,15 +248,15 @@ sub configure_cpanplus
             %{_get_mirror('m0', SmokeConf::get_primary_cpan_mirror())},
             %{_get_mirror('m1', SmokeConf::get_secondary_cpan_mirror())},
         );
-        exec_program($perl_exe, "-MCPANPLUS::Configure", "-e", 
-            q/my %p = @ARGV; 
-              my $conf = CPANPLUS::Configure->new(); 
+        exec_program($perl_exe, "-MCPANPLUS::Configure", "-e",
+            q/my %p = @ARGV;
+              my $conf = CPANPLUS::Configure->new();
               $conf->set_conf(email => $p{'email'});
               $conf->set_conf(cpantest => 1);
               $conf->set_conf(verbose => 1);
-              $conf->set_conf("hosts", 
-                [map 
-                    { 
+              $conf->set_conf("hosts",
+                [map
+                    {
                         +{
                             path => $p{$_ . "_path"},
                             scheme => $p{$_ . "_scheme"},
